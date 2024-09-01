@@ -76,21 +76,40 @@ void jvm_emitter::trace() const {
 }
 
 // @todo: emit based on subpath/dirname of input
-void write_class(const std::string& filename,
-                 const std::vector<uint8_t>& bytecode) {
+void write_class_file(const std::string& filename,
+                      const std::vector<uint8_t>& bytecode) {
   std::ofstream file(filename, std::ios::binary);
 
   if (!file.is_open()) {
     throw std::runtime_error("failed to open file (for write): " + filename);
   }
 
-  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_MAGIC_HEADER),
-             sizeof(JAVA_CLASS_MAGIC_HEADER));
+  // clang-format off
+  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_MAGIC_HEADER), sizeof(JAVA_CLASS_MAGIC_HEADER));
+
+  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_MINOR_VERSION), sizeof(JAVA_CLASS_MINOR_VERSION));
+  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_MAJOR_VERSION), sizeof(JAVA_CLASS_MAJOR_VERSION));
+
+  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_CONSTANT_POOL_COUNT), sizeof(JAVA_CLASS_CONSTANT_POOL_COUNT));
+
+  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_ACCESS_FLAGS), sizeof(JAVA_CLASS_ACCESS_FLAGS));
+
+  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_THIS_CLASS), sizeof(JAVA_CLASS_THIS_CLASS));
+  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_SUPER_CLASS), sizeof(JAVA_CLASS_SUPER_CLASS));
+
+  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_INTERFACE_COUNT), sizeof(JAVA_CLASS_INTERFACE_COUNT));
+  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_FIELD_COUNT), sizeof(JAVA_CLASS_FIELD_COUNT));
+  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_METHOD_COUNT), sizeof(JAVA_CLASS_METHOD_COUNT));
+  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_ATTRIBUTE_COUNT), sizeof(JAVA_CLASS_ATTRIBUTE_COUNT));
+
   file.write(reinterpret_cast<const char*>(bytecode.data()), bytecode.size());
+
+  // clang-format on
 
   file.close();
 }
 
+// make && clear && make run ARGS="-c tests/main.lsp"
 void __test_emit__() {
   jvm_emitter emitter;
   emitter.emit_iconst(2);
@@ -103,5 +122,5 @@ void __test_emit__() {
   std::cout << "--------------------------" << std::endl;
 
   emitter.trace();
-  write_class("./tests/main.class", emitter.bytecode);
+  write_class_file("./tests/main.class", emitter.bytecode);
 }
