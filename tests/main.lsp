@@ -1,5 +1,4 @@
-(def n 0)
-
-(set n 1)
-
-(def p (/ n (+ n n)))
+(def n 2)
+(debug n)
+(set n 0)
+(debug n)

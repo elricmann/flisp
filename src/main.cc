@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "./emit.h"
+#include "./interp.h"
 #include "./lexer.h"
 #include "./parser.h"
 
@@ -38,24 +39,16 @@ void argparse(int argc, char const* argv[]) {
 
 void compile(const std::string& source) {
   std::vector<token> tokens = tokenize(source);
+  const std::shared_ptr<expr>& expr_tree = parser(tokens).parse();
 
-  // std::cout << "---------------" << std::endl;
-  // std::cout << "     lexer     " << std::endl;
-  // std::cout << "---------------" << std::endl;
+  std::shared_ptr<list_expr> expr_tree_lst =
+      std::dynamic_pointer_cast<list_expr>(expr_tree);
 
-  // std::cout << tokens.size() << std::endl;
+  for (auto&& expr_lst_node : expr_tree_lst->get_exprs()) {
+    interp().eval(expr_lst_node);
+  }
 
-  // for (auto&& token : tokens) {
-  //   std::cout << token.get_type() << " → " << token.get_value() << std::endl;
-  // }
-
-  // std::cout << "----------------" << std::endl;
-  // std::cout << "     parser     " << std::endl;
-  // std::cout << "----------------" << std::endl;
-
-  std::shared_ptr<expr> expr_tree = parser(tokens).parse();
-
-  __test_emit__();
+  // __test_emit__();
 
   // std::unordered_map<std::type_index,
   //                    std::function<void(std::shared_ptr<expr>)>>
