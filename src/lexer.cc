@@ -11,6 +11,9 @@ std::vector<token> tokenize(const std::string& source) {
     tok = lex.next_token();
   }
 
+  // @todo: fix this insertion issue
+  tokens.insert(tokens.begin(), token{token_type::token_left_paren, "("});
+
   return tokens;
 }
 
@@ -40,7 +43,10 @@ token lexer::next_token() {
   } else if (std::isdigit(current) ||
              (current == '.' && std::isdigit(peek_char()))) {
     return number();
-  } else if (std::isalpha(current) || current == '_') {
+  } else if (std::isalpha(current) || current == '_' || current_char() == '_' ||
+             current_char() == '+' || current_char() == '-' ||
+             current_char() == '*' || current_char() == '/' ||
+             current_char() == '=') {
     return symbol();
   } else if (current == '#' && (peek_char() == 't' || peek_char() == 'f')) {
     return boolean();
@@ -150,14 +156,26 @@ void lexer::skip_whitespace() {
 
 token lexer::symbol() {
   std::size_t start_pos = current_pos_;
+  std::string value;
+
+  while (current_pos_ < source_.size() &&
+         (std::isalnum(current_char()) || current_char() == '_' ||
+          current_char() == '+' || current_char() == '-' ||
+          current_char() == '*' || current_char() == '/' ||
+          current_char() == '=')) {
+    value += current_char();
+    eat();
+  }
 
   while (current_pos_ < source_.size() &&
          (std::isalnum(current_char()) || current_char() == '_')) {
     eat();
   }
 
-  return token(token_type::token_symbol,
-               source_.substr(start_pos, current_pos_ - start_pos));
+  return value.length()
+             ? token(token_type::token_symbol, value)
+             : token(token_type::token_symbol,
+                     source_.substr(start_pos, current_pos_ - start_pos));
 }
 
 std::ostream& operator<<(std::ostream& os, token_type type) {

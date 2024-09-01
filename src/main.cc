@@ -3,7 +3,12 @@
 #include "./lexer.h"
 
 int main(int argc, char const* argv[]) {
-  const std::string& source = " (def n 3.14)";
+  const std::string& source =
+      "(def n 0)"
+      "(def pi 3.14)"
+      "(set n #t)"
+      "(echo \"literal\")"
+      "(+ m (/ m n))";
   std::vector<token> tokens = tokenize(source);
 
   std::cout << tokens.size() << std::endl;
