@@ -26,7 +26,7 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 run:
-	$(BUILD_DIR)/$(EXEC_NAME)
+	$(BUILD_DIR)/$(EXEC_NAME) $(ARGS)
 
 clean:
 	rm -rf $(BUILD_DIR)
