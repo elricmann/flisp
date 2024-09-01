@@ -3,7 +3,12 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <functional>
 #include <memory>
+#include <stdexcept>
+#include <typeindex> /*std::type_index*/
+#include <typeinfo>
+#include <unordered_map>
 #include <vector>
 
 #include "lexer.h"
@@ -79,5 +84,10 @@ class parser {
   void eat();
   bool match(token_type type) const;
 };
+
+void visit(std::shared_ptr<expr> node,
+           const std::unordered_map<std::type_index,
+                                    std::function<void(std::shared_ptr<expr>)>>&
+               callbacks);
 
 #endif  // PARSER_H

@@ -1,11 +1,5 @@
 #include "parser.h"
 
-#include <functional>
-#include <memory>
-#include <stdexcept>
-#include <typeinfo>
-#include <unordered_map>
-
 parser::parser(const std::vector<token>& tokens)
     : tokens_(tokens), current_pos_(0) {}
 
@@ -62,4 +56,21 @@ void parser::eat() {
 
 bool parser::match(token_type type) const {
   return current_token().get_type() == type;
+}
+
+void visit(std::shared_ptr<expr> node,
+           const std::unordered_map<std::type_index,
+                                    std::function<void(std::shared_ptr<expr>)>>&
+               callbacks) {
+  auto it = callbacks.find(std::type_index(typeid(*node)));
+
+  if (it != callbacks.end()) {
+    it->second(node);
+  }
+
+  if (auto list = std::dynamic_pointer_cast<list_expr>(node)) {
+    for (const auto& child : list->get_exprs()) {
+      visit(child, callbacks);
+    }
+  }
 }
