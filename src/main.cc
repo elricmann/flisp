@@ -42,6 +42,12 @@ int main(int argc, char const* argv[]) {
     std::cout << "found number: " << num_node->get_value() << std::endl;
   };
 
+  callbacks[typeid(list_expr)] = [](std::shared_ptr<expr> node) {
+    auto list_node = std::dynamic_pointer_cast<list_expr>(node);
+    std::cout << "entering list (size): " << list_node->get_exprs().size()
+              << std::endl;
+  };
+
   visit(expr_tree, callbacks);
 
   return 0;

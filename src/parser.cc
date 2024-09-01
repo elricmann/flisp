@@ -3,7 +3,17 @@
 parser::parser(const std::vector<token>& tokens)
     : tokens_(tokens), current_pos_(0) {}
 
-std::shared_ptr<expr> parser::parse() { return parse_expr(); }
+// std::shared_ptr<expr> parser::parse() { return parse_expr(); }
+
+std::shared_ptr<expr> parser::parse() {
+  auto list = std::make_shared<list_expr>();
+
+  while (current_pos_ < tokens_.size()) {
+    list->add_expr(parse_expr());
+  }
+
+  return list;
+}
 
 std::shared_ptr<expr> parser::parse_expr() {
   if (match(token_type::token_left_paren)) {
