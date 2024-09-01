@@ -27,13 +27,22 @@ class symbol_expr : public expr {
   std::string name_;
 };
 
-class number_expr : public expr {
+class integer_expr : public expr {
  public:
-  explicit number_expr(const std::string& value) : value_(value) {}
-  std::string get_value() const { return value_; }
+  explicit integer_expr(const std::string& value) : value_(std::stoi(value)) {}
+  int get_value() const { return value_; }
 
  private:
-  std::string value_;
+  int value_;
+};
+
+class float_expr : public expr {
+ public:
+  explicit float_expr(const std::string& value) : value_(std::stof(value)) {}
+  float get_value() const { return value_; }
+
+ private:
+  float value_;
 };
 
 class boolean_expr : public expr {

@@ -39,14 +39,16 @@ std::shared_ptr<expr> parser::parse_list() {
 
 std::shared_ptr<expr> parser::parse_atom() {
   auto tok = current_token();
+
   eat();
+
   switch (tok.get_type()) {
     case token_type::token_symbol:
       return std::make_shared<symbol_expr>(tok.get_value());
     case token_type::token_integer:
-      return std::make_shared<number_expr>(tok.get_value());
+      return std::make_shared<integer_expr>(tok.get_value());
     case token_type::token_float:
-      return std::make_shared<number_expr>(tok.get_value());
+      return std::make_shared<float_expr>(tok.get_value());
     case token_type::token_boolean:
       return std::make_shared<boolean_expr>(tok.get_value() == "#t");
     case token_type::token_string_literal:

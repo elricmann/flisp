@@ -37,9 +37,16 @@ int main(int argc, char const* argv[]) {
     std::cout << "found symbol: " << sym_node->get_name() << std::endl;
   };
 
-  callbacks[typeid(number_expr)] = [](std::shared_ptr<expr> node) {
-    auto num_node = std::dynamic_pointer_cast<number_expr>(node);
-    std::cout << "found number: " << num_node->get_value() << std::endl;
+  callbacks[typeid(integer_expr)] = [](std::shared_ptr<expr> node) {
+    auto integer_literal_node = std::dynamic_pointer_cast<integer_expr>(node);
+    std::cout << "found integer: " << integer_literal_node->get_value()
+              << std::endl;
+  };
+
+  callbacks[typeid(float_expr)] = [](std::shared_ptr<expr> node) {
+    auto float_literal_node = std::dynamic_pointer_cast<float_expr>(node);
+    std::cout << "found float: " << float_literal_node->get_value()
+              << std::endl;
   };
 
   callbacks[typeid(list_expr)] = [](std::shared_ptr<expr> node) {

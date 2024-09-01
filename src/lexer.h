@@ -3,7 +3,6 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include <cctype>
 #include <iostream>
 #include <stdexcept>
 #include <string>
