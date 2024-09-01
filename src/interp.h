@@ -15,6 +15,7 @@ class interp {
 
  private:
   std::unordered_map<std::string, int> variables;
+  bool skip_initial_lst;
 
   void eval_def(const std::shared_ptr<list_expr>& list);
   void eval_set(const std::shared_ptr<list_expr>& list);
