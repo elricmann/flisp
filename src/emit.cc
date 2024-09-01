@@ -75,41 +75,77 @@ void jvm_emitter::trace() const {
   std::cout << std::endl;
 }
 
+// /!\ endianness of class files and bytes written to C++ filestream
+//     require re-ordering, javap appears to parse metadata this way
+
+void write_uint16_be(std::ofstream& file, uint16_t value) {
+  file.put(static_cast<char>((value >> 8) & 0xFF));
+  file.put(static_cast<char>(value & 0xFF));
+}
+
+void write_uint32_be(std::ofstream& file, uint32_t value) {
+  file.put(static_cast<char>((value >> 24) & 0xFF));
+  file.put(static_cast<char>((value >> 16) & 0xFF));
+  file.put(static_cast<char>((value >> 8) & 0xFF));
+  file.put(static_cast<char>(value & 0xFF));
+}
+
 // @todo: emit based on subpath/dirname of input
-void write_class_file(const std::string& filename,
-                      const std::vector<uint8_t>& bytecode) {
+[[deprecated]] void write_class_file(const std::string& filename,
+                                     const std::vector<uint8_t>& bytecode) {
   std::ofstream file(filename, std::ios::binary);
 
   if (!file.is_open()) {
     throw std::runtime_error("failed to open file (for write): " + filename);
   }
 
-  // clang-format off
-  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_MAGIC_HEADER), sizeof(JAVA_CLASS_MAGIC_HEADER));
+  write_uint32_be(file, JAVA_CLASS_MAGIC_HEADER);
 
-  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_MINOR_VERSION), sizeof(JAVA_CLASS_MINOR_VERSION));
-  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_MAJOR_VERSION), sizeof(JAVA_CLASS_MAJOR_VERSION));
+  write_uint16_be(file, JAVA_CLASS_MINOR_VERSION);
+  write_uint16_be(file, JAVA_CLASS_MAJOR_VERSION);
 
-  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_CONSTANT_POOL_COUNT), sizeof(JAVA_CLASS_CONSTANT_POOL_COUNT));
+  write_uint16_be(file, 5);
 
-  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_ACCESS_FLAGS), sizeof(JAVA_CLASS_ACCESS_FLAGS));
+  file.put(CONSTANT_Class);
+  write_uint16_be(file,
+                  3);  // "__flisp_module__" @ index 3 in CP
 
-  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_THIS_CLASS), sizeof(JAVA_CLASS_THIS_CLASS));
-  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_SUPER_CLASS), sizeof(JAVA_CLASS_SUPER_CLASS));
+  // constant pool entry 2: class ref (java/lang/Object)
+  file.put(CONSTANT_Class);
+  write_uint16_be(file, 4);  // "java/lang/Object" @ index 4 in CP
 
-  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_INTERFACE_COUNT), sizeof(JAVA_CLASS_INTERFACE_COUNT));
-  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_FIELD_COUNT), sizeof(JAVA_CLASS_FIELD_COUNT));
-  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_METHOD_COUNT), sizeof(JAVA_CLASS_METHOD_COUNT));
-  file.write(reinterpret_cast<const char*>(&JAVA_CLASS_ATTRIBUTE_COUNT), sizeof(JAVA_CLASS_ATTRIBUTE_COUNT));
+  // constant pool entry 3: utf-8 (class name)
+  file.put(CONSTANT_Utf8);
+  write_uint16_be(file, JAVA_CLASS_NAME.size());
+  file.write(JAVA_CLASS_NAME.c_str(), JAVA_CLASS_NAME.size());
 
+  // constant pool entry 4: utf-8 (super class name)
+  file.put(CONSTANT_Utf8);
+  write_uint16_be(file, JAVA_SUPER_CLASS_NAME.size());
+  file.write(JAVA_SUPER_CLASS_NAME.c_str(), JAVA_SUPER_CLASS_NAME.size());
+
+  write_uint16_be(file, JAVA_CLASS_ACCESS_FLAGS);
+
+  // there likely needs to be a hidden method and big-endian attributes
+  // after the bytecode is appended. for now this should stay deprecated
+
+  /* references of "this" and super classes */
+
+  write_uint16_be(file, 1);  // "this" class @ index 1 in CP
+  write_uint16_be(file, 2);  // superclass @ index 2 in CP
+  write_uint16_be(file, 0);  // interfaces count
+  write_uint16_be(file, 0);  // fields count
+  write_uint16_be(file, 0);  // methods count
+  write_uint16_be(file, 0);  // attributes count
+
+  // force write the bytecode & clamp to bytecode.size()
   file.write(reinterpret_cast<const char*>(bytecode.data()), bytecode.size());
-
-  // clang-format on
 
   file.close();
 }
 
 // make && clear && make run ARGS="-c tests/main.lsp"
+// javap tests/main.class
 void __test_emit__() {
   jvm_emitter emitter;
   emitter.emit_iconst(2);
