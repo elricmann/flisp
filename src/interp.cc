@@ -46,6 +46,12 @@ expr_value get_value_from_expr(eval_context& ctx,
             return eval_if(ctx, list_node);
           }
           break;
+        case 'f':
+          std::cout << "found function" << std::endl;
+          if (name == "fun") {
+            return eval_fun(ctx, list_node);
+          }
+          break;
         default:
           break;
       }
@@ -300,4 +306,70 @@ expr_value eval_if(eval_context& ctx, const std::shared_ptr<list_expr>& list) {
   }
 
   return {};
+}
+
+expr_value eval_fun(eval_context& ctx, const std::shared_ptr<list_expr>& list) {
+  if (list->get_exprs().size() < 3) {
+    std::cerr
+        << "error: 'fun' expression requires a name, parameters, and a body"
+        << std::endl;
+    exit(1);
+  }
+
+  auto name_expr = std::dynamic_pointer_cast<symbol_expr>(list->get_exprs()[1]);
+  auto params_expr = std::dynamic_pointer_cast<list_expr>(list->get_exprs()[2]);
+  auto body_expr = std::dynamic_pointer_cast<list_expr>(list->get_exprs()[3]);
+
+  if (!name_expr || !params_expr || !body_expr) {
+    std::cerr << "error: invalid 'fun' expression structure" << std::endl;
+    exit(1);
+  }
+
+  std::string func_name = name_expr->get_name();
+  std::vector<std::string> func_params;
+
+  for (const auto& param : params_expr->get_exprs()) {
+    if (auto param_symbol = std::dynamic_pointer_cast<symbol_expr>(param)) {
+      func_params.push_back(param_symbol->get_name());
+    } else {
+      std::cerr << "error: 'fun' parameters must be symbols" << std::endl;
+      exit(1);
+    }
+  }
+
+  auto func =
+      [params = std::move(func_params), body_expr = std::move(body_expr)](
+          eval_context& ctx, std::vector<expr_value> args) -> expr_value {
+    if (args.size() != params.size()) {
+      std::cerr << "error: argument count does not match parameter count"
+                << std::endl;
+      exit(1);
+    }
+
+    eval_context& local_ctx = ctx;
+
+    for (size_t i = 0; i < params.size(); ++i) {
+      local_ctx.vmap[params[i]] = std::move(args[i]);
+    }
+
+    expr_value func_ret_value;
+
+    // auto fn_body = body_expr->get_exprs();
+    // fn_body.erase(fn_body.begin(), fn_body.begin() + 1);
+
+    for (const auto& expr : body_expr->get_exprs()) {
+      func_ret_value = get_value_from_expr(local_ctx, expr);
+    }
+
+    return func_ret_value;
+  };
+
+  std::cout << func_name << std::endl;
+
+  ctx.fmap.insert_or_assign(
+      std::move(func_name),
+      std::make_unique<callable_impl<decltype(func)>>(std::move(func)));
+
+  return expr_value(
+      std::make_unique<callable_impl<decltype(func)>>(std::move(func)));
 }

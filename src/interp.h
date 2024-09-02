@@ -38,9 +38,7 @@ class callable_impl : public callable {
 class eval_context {
  public:
   std::unordered_map<std::string, expr_value> vmap;
-  std::unordered_map<std::string,
-                     std::function<expr_value(std::vector<expr_value>)>>
-      fmap;
+  std::unordered_map<std::string, std::unique_ptr<callable>> fmap;
 };
 
 class interp {
@@ -64,6 +62,7 @@ class interp {
 // on their corresponding identity elements (e.g. 0 for additive
 // identity or 1 for multiplicative identity)
 
+expr_value eval_fun(eval_context& ctx, const std::shared_ptr<list_expr>& list);
 expr_value eval_if(eval_context& ctx, const std::shared_ptr<list_expr>& list);
 expr_value eval_add(eval_context& ctx, const std::shared_ptr<list_expr>& list);
 expr_value eval_sub(eval_context& ctx, const std::shared_ptr<list_expr>& list);

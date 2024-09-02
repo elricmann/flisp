@@ -21,3 +21,5 @@
 (debug circle_area)
 
 (debug (if #t 1 0))
+
+(fun add (a b) (+ a b))
