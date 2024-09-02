@@ -23,9 +23,34 @@ expr_value get_value_from_expr(
       std::cerr << "error: identifier '" << name << "' not found" << std::endl;
       exit(1);
     }
+  } else if (auto list_node = std::dynamic_pointer_cast<list_expr>(node)) {
+    auto first_expr = list_node->get_exprs().front();
+    auto symbol = std::dynamic_pointer_cast<symbol_expr>(first_expr);
+
+    if (symbol) {
+      const std::string& name = symbol->get_name();
+
+      switch (name[0]) {
+        case '+':
+          return eval_add(list_node, vmap);
+          break;
+        case '-':
+          return eval_sub(list_node, vmap);
+          break;
+        case '*':
+          return eval_mul(list_node, vmap);
+          break;
+        case '/':
+          return eval_div(list_node, vmap);
+          break;
+        default:
+          break;
+      }
+    }
   }
 
-  throw std::runtime_error("error: unknown expression type");
+  std::cerr << "error: unknown expression type" << std::endl;
+  exit(1);
 }
 
 void interp::eval(const std::shared_ptr<expr>& node) {
@@ -107,4 +132,141 @@ void interp::eval_debug(const std::shared_ptr<list_expr>& list) {
         },
         value);
   }
+}
+
+expr_value eval_add(const std::shared_ptr<list_expr>& list,
+                    const std::unordered_map<std::string, expr_value>& vmap) {
+  float acc = 0;
+
+  for (size_t i = 1; i < list->get_exprs().size(); ++i) {
+    auto value = get_value_from_expr(list->get_exprs()[i], vmap);
+
+    std::visit(
+        [&](auto&& arg) {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, int> || std::is_same_v<T, float>) {
+            acc += arg;
+          } else {
+            std::cerr << "error: invalid type for add" << std::endl;
+            exit(1);
+          }
+        },
+        value);
+  }
+
+  return acc;
+}
+
+expr_value eval_sub(const std::shared_ptr<list_expr>& list,
+                    const std::unordered_map<std::string, expr_value>& vmap) {
+  if (list->get_exprs().size() < 2) {
+    std::cerr << "error: at least one operand required for sub" << std::endl;
+    exit(1);
+  }
+
+  auto fst = get_value_from_expr(list->get_exprs()[1], vmap);
+  float acc = 0;
+
+  std::visit(
+      [&](auto&& arg) {
+        using T = std::decay_t<decltype(arg)>;
+
+        if constexpr (std::is_same_v<T, int> || std::is_same_v<T, float>) {
+          acc = arg;
+        } else {
+          std::cerr << "error: invalid type for sub" << std::endl;
+          exit(1);
+        }
+      },
+      fst);
+
+  for (size_t i = 2; i < list->get_exprs().size(); ++i) {
+    auto value = get_value_from_expr(list->get_exprs()[i], vmap);
+
+    std::visit(
+        [&](auto&& arg) {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, int> || std::is_same_v<T, float>) {
+            acc -= arg;
+          } else {
+            std::cerr << "error: invalid type for sub" << std::endl;
+            exit(1);
+          }
+        },
+        value);
+  }
+
+  return acc;
+}
+
+expr_value eval_mul(const std::shared_ptr<list_expr>& list,
+                    const std::unordered_map<std::string, expr_value>& vmap) {
+  float acc = 1;
+
+  for (size_t i = 1; i < list->get_exprs().size(); ++i) {
+    auto value = get_value_from_expr(list->get_exprs()[i], vmap);
+
+    std::visit(
+        [&](auto&& arg) {
+          using T = std::decay_t<decltype(arg)>;
+
+          if constexpr (std::is_same_v<T, int> || std::is_same_v<T, float>) {
+            acc *= arg;
+          } else {
+            std::cerr << "error: invalid type for mul" << std::endl;
+            exit(1);
+          }
+        },
+        value);
+  }
+
+  return acc;
+}
+
+expr_value eval_div(const std::shared_ptr<list_expr>& list,
+                    const std::unordered_map<std::string, expr_value>& vmap) {
+  if (list->get_exprs().size() < 2) {
+    std::cerr << "error: at least one operand required for div" << std::endl;
+    exit(1);
+  }
+
+  auto fst = get_value_from_expr(list->get_exprs()[1], vmap);
+  float acc = 0;
+
+  std::visit(
+      [&](auto&& arg) {
+        using T = std::decay_t<decltype(arg)>;
+
+        if constexpr (std::is_same_v<T, int> || std::is_same_v<T, float>) {
+          acc = arg;
+        } else {
+          std::cerr << "error: invalid type for div" << std::endl;
+          exit(1);
+        }
+      },
+      fst);
+
+  for (size_t i = 2; i < list->get_exprs().size(); ++i) {
+    auto value = get_value_from_expr(list->get_exprs()[i], vmap);
+
+    std::visit(
+        [&](auto&& arg) {
+          using T = std::decay_t<decltype(arg)>;
+
+          if constexpr (std::is_same_v<T, int> || std::is_same_v<T, float>) {
+            if (arg == 0) {
+              std::cerr << "error: div by zero" << std::endl;
+              exit(1);
+            }
+
+            acc /= arg;
+          } else {
+            std::cerr << "error: invalid type for div" << std::endl;
+            exit(1);
+          }
+        },
+        value);
+  }
+
+  return acc;
 }

@@ -12,8 +12,10 @@ Forms represent both structural and semantic constructs, which is what makes lis
 
 - [x] `def` for defining variables (uses `std::unordered_map`)
 - [x] `set` as the default assignment form (mutable-by-default)
-- [x] `debug` is an alias for printing to `std::cout`
-- [ ] `+`, `-`, `*`, `/` operators
+- [x] `debug` is an alias for printing values to `std::cout`
+- [x] `+`, `-`, `*`, `/` operators
+
+In the evaluation loop, non-terminals are forward definitions and terminals are recursively evaluated (e.g. forms for binary operations), implying that a `def` may not be assigned to a `def` since terminals do not return an `expr_value`.
 
 ### Installation & usage
 

@@ -20,7 +20,25 @@ class interp {
   void eval_def(const std::shared_ptr<list_expr>& list);
   void eval_set(const std::shared_ptr<list_expr>& list);
   void eval_debug(const std::shared_ptr<list_expr>& list);
+  void eval_add(const std::shared_ptr<list_expr>& list);
+  void eval_sub(const std::shared_ptr<list_expr>& list);
+  void eval_mul(const std::shared_ptr<list_expr>& list);
+  void eval_div(const std::shared_ptr<list_expr>& list);
 };
+
+// the definitions below should remain recursive with regards
+// to get_value_from_expr, binary operations accumulate based
+// on their corresponding identity elements (e.g. 0 for additive
+// identity or 1 for multiplicative identity)
+
+expr_value eval_add(const std::shared_ptr<list_expr>& list,
+                    const std::unordered_map<std::string, expr_value>& vmap);
+expr_value eval_sub(const std::shared_ptr<list_expr>& list,
+                    const std::unordered_map<std::string, expr_value>& vmap);
+expr_value eval_mul(const std::shared_ptr<list_expr>& list,
+                    const std::unordered_map<std::string, expr_value>& vmap);
+expr_value eval_div(const std::shared_ptr<list_expr>& list,
+                    const std::unordered_map<std::string, expr_value>& vmap);
 
 expr_value get_value_from_expr(
     const std::shared_ptr<expr>& node,

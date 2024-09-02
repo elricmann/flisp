@@ -10,4 +10,12 @@
 
 (def k #f)
 
-(debug k)
+(def m (+ 2 (- 3 7)))
+
+(debug m)
+
+(debug (/ m (- 3 11)))
+
+(def circle_area (* 3.142 7 7))
+
+(debug circle_area)
