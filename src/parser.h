@@ -9,9 +9,12 @@
 #include <typeindex> /*std::type_index*/
 #include <typeinfo>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 #include "lexer.h"
+
+using expr_value = std::variant<int, float, bool, std::string>;
 
 class expr {
  public:
