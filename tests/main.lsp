@@ -19,3 +19,5 @@
 (def circle_area (* 3.142 7 7))
 
 (debug circle_area)
+
+(debug (if #t 1 0))

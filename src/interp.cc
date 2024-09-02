@@ -43,6 +43,11 @@ expr_value get_value_from_expr(
         case '/':
           return eval_div(list_node, vmap);
           break;
+        case 'i':
+          if (name == "if") {
+            return eval_if(list_node, vmap);
+          }
+          break;
         default:
           break;
       }
@@ -269,4 +274,42 @@ expr_value eval_div(const std::shared_ptr<list_expr>& list,
   }
 
   return acc;
+}
+
+expr_value eval_if(const std::shared_ptr<list_expr>& list,
+                   const std::unordered_map<std::string, expr_value>& vmap) {
+  if (list->get_exprs().size() < 2) {
+    std::cerr << "error: 'if' expression requires at least a condition and a "
+                 "then clause"
+              << std::endl;
+    exit(1);
+  }
+
+  auto condition_value = get_value_from_expr(list->get_exprs()[1], vmap);
+
+  bool condition = false;
+
+  std::visit(
+      [&](auto&& arg) {
+        using T = std::decay_t<decltype(arg)>;
+
+        if constexpr (std::is_same_v<T, bool>) {
+          condition = arg;
+        } else {
+          std::cerr << "error: 'if' condition must evaluate to a boolean"
+                    << std::endl;
+          exit(1);
+        }
+      },
+      condition_value);
+
+  if (condition) {
+    return get_value_from_expr(list->get_exprs()[2], vmap);
+  }
+
+  if (list->get_exprs().size() > 3) {
+    return get_value_from_expr(list->get_exprs()[3], vmap);
+  }
+
+  return {};
 }
