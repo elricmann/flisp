@@ -9,6 +9,32 @@
 
 #include "parser.h"
 
+class callable;
+class eval_context;
+
+using expr_value =
+    std::variant<int, float, bool, std::string, std::unique_ptr<callable>>;
+
+class callable {
+ public:
+  virtual ~callable() = default;
+  virtual expr_value operator()(eval_context& ctx,
+                                std::vector<expr_value> args) = 0;
+};
+
+template <typename F>
+class callable_impl : public callable {
+  F func;
+
+ public:
+  callable_impl(F&& f) : func(std::forward<F>(f)) {}
+
+  expr_value operator()(eval_context& ctx,
+                        std::vector<expr_value> args) override {
+    return func(ctx, std::move(args));
+  }
+};
+
 class eval_context {
  public:
   std::unordered_map<std::string, expr_value> vmap;

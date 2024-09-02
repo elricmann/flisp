@@ -14,8 +14,6 @@
 
 #include "lexer.h"
 
-using expr_value = std::variant<int, float, bool, std::string>;
-
 class expr {
  public:
   virtual ~expr() = default;

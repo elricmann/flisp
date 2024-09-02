@@ -16,7 +16,7 @@ expr_value get_value_from_expr(eval_context& ctx,
     const std::string& name = symbol_node->get_name();
 
     if (ctx.vmap.find(name) != ctx.vmap.end()) {
-      return ctx.vmap.at(name);
+      return std::move(ctx.vmap.at(name));
     } else {
       std::cerr << "error: identifier '" << name << "' not found" << std::endl;
       exit(1);
@@ -95,7 +95,7 @@ void interp::eval_def(eval_context& ctx,
   auto value_expr = get_value_from_expr(ctx, lst->get_exprs()[2]);
 
   if (symbol) {
-    ctx.vmap[symbol->get_name()] = value_expr;
+    ctx.vmap[symbol->get_name()] = std::move(value_expr);
   }
 }
 
@@ -105,7 +105,7 @@ void interp::eval_set(eval_context& ctx,
   auto value_expr = get_value_from_expr(ctx, lst->get_exprs()[2]);
 
   if (symbol) {
-    vmap[symbol->get_name()] = value_expr;
+    vmap[symbol->get_name()] = std::move(value_expr);
   }
 }
 
