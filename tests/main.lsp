@@ -23,3 +23,5 @@
 (debug (if #t 1 0))
 
 (fun add (a b) (+ a b))
+
+(def n (add 2 3))

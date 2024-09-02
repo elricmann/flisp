@@ -28,26 +28,47 @@ expr_value get_value_from_expr(eval_context& ctx,
     if (symbol) {
       const std::string& name = symbol->get_name();
 
-      switch (name[0]) {
-        case '+':
-          return eval_add(ctx, list_node);
-          break;
-        case '-':
-          return eval_sub(ctx, list_node);
-          break;
-        case '*':
-          return eval_mul(ctx, list_node);
-          break;
-        case '/':
-          return eval_div(ctx, list_node);
-          break;
-        case 'i':
-          if (name == "if") {
-            return eval_if(ctx, list_node);
+      if (name == "+") {
+        return eval_add(ctx, list_node);
+      } else if (name == "-") {
+        return eval_sub(ctx, list_node);
+      } else if (name == "*") {
+        return eval_mul(ctx, list_node);
+      } else if (name == "/") {
+        return eval_div(ctx, list_node);
+      } else if (name == "if") {
+        return eval_if(ctx, list_node);
+      } else if (ctx.fmap.find(name) != ctx.fmap.end()) {
+        std::vector<expr_value> args;
+
+        for (size_t i = 1; i < list_node->get_exprs().size(); ++i) {
+          args.push_back(get_value_from_expr(ctx, list_node->get_exprs()[i]));
+        }
+
+        auto& func_value = ctx.fmap.at(name);
+
+        std::cout << "FN CALL : " << name << " ARG SIZE : " << args.size()
+                  << " FMAP SIZE : " << ctx.fmap.size() << std::endl;
+
+        if (auto* func_ptr =
+                std::get_if<std::unique_ptr<callable>>(&func_value)) {
+          if (func_ptr && *func_ptr) {
+            return (**func_ptr)(ctx, std::move(args));
+          } else {
+            std::cerr << "error: callable function is null" << std::endl;
+            exit(1);
           }
-          break;
-        default:
-          break;
+        } else {
+          std::cerr << "error: '" << name << "' is not a callable function"
+                    << std::endl;
+          exit(1);
+        }
+
+        // return {};
+      } else {
+        std::cerr << "error: function '" << name << "' not found in fmap"
+                  << std::endl;
+        exit(1);
       }
     }
   }
