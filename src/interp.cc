@@ -47,7 +47,7 @@ expr_value get_value_from_expr(eval_context& ctx,
           }
           break;
         case 'f':
-          std::cout << "found function" << std::endl;
+          // @todo: not necessary?
           if (name == "fun") {
             return eval_fun(ctx, list_node);
           }
@@ -94,14 +94,46 @@ void interp::eval(eval_context& ctx, const std::shared_ptr<expr>& node) {
 
 // @todo: prevent redefinition & mutable-by-default
 void interp::eval_def(eval_context& ctx,
-                      const std::shared_ptr<list_expr>& lst) {
-  auto symbol = std::dynamic_pointer_cast<symbol_expr>(lst->get_exprs()[1]);
-  // auto value_expr =
-  //     std::dynamic_pointer_cast<integer_expr>(lst->get_exprs()[2]);
-  auto value_expr = get_value_from_expr(ctx, lst->get_exprs()[2]);
+                      const std::shared_ptr<list_expr>& list) {
+  // we will allow def to work with function expressions
+  // and normal variable initialization (both into vmap)
+  if (list->get_exprs().size() == 2) {
+    auto func_expr = list->get_exprs()[1];
 
-  if (symbol) {
-    ctx.vmap[symbol->get_name()] = std::move(value_expr);
+    if (auto func_list = std::dynamic_pointer_cast<list_expr>(func_expr)) {
+      if (auto func_symbol = std::dynamic_pointer_cast<symbol_expr>(
+              func_list->get_exprs()[0])) {
+        if (func_symbol->get_name() == "fun") {
+          auto func_value = eval_fun(ctx, func_list);
+
+          if (auto func_name_expr = std::dynamic_pointer_cast<symbol_expr>(
+                  func_list->get_exprs()[1])) {
+            ctx.vmap[func_name_expr->get_name()] = std::move(func_value);
+            return;
+          }
+        }
+      }
+    }
+
+    std::cerr << "error: invalid 'def' expression" << std::endl;
+    exit(1);
+  } else if (list->get_exprs().size() == 3) {
+    auto symbol = std::dynamic_pointer_cast<symbol_expr>(list->get_exprs()[1]);
+    auto value_expr = get_value_from_expr(ctx, list->get_exprs()[2]);
+
+    if (symbol) {
+      ctx.vmap[symbol->get_name()] = std::move(value_expr);
+
+      return;
+    }
+
+    std::cerr << "error: invalid 'def' expression for variable initialization"
+              << std::endl;
+    exit(1);
+  } else {
+    std::cerr << "error: 'def' expression must have 1 or 2 parameters"
+              << std::endl;
+    exit(1);
   }
 }
 
@@ -354,17 +386,12 @@ expr_value eval_fun(eval_context& ctx, const std::shared_ptr<list_expr>& list) {
 
     expr_value func_ret_value;
 
-    // auto fn_body = body_expr->get_exprs();
-    // fn_body.erase(fn_body.begin(), fn_body.begin() + 1);
-
     for (const auto& expr : body_expr->get_exprs()) {
       func_ret_value = get_value_from_expr(local_ctx, expr);
     }
 
     return func_ret_value;
   };
-
-  std::cout << func_name << std::endl;
 
   ctx.fmap.insert_or_assign(
       std::move(func_name),

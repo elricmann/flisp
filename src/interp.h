@@ -63,6 +63,7 @@ class interp {
 // identity or 1 for multiplicative identity)
 
 expr_value eval_fun(eval_context& ctx, const std::shared_ptr<list_expr>& list);
+// expr_value eval_call(eval_context& ctx, const std::shared_ptr<list_expr>& list);
 expr_value eval_if(eval_context& ctx, const std::shared_ptr<list_expr>& list);
 expr_value eval_add(eval_context& ctx, const std::shared_ptr<list_expr>& list);
 expr_value eval_sub(eval_context& ctx, const std::shared_ptr<list_expr>& list);
