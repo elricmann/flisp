@@ -38,7 +38,8 @@ class callable_impl : public callable {
 class eval_context {
  public:
   std::unordered_map<std::string, expr_value> vmap;
-  std::unordered_map<std::string, std::unique_ptr<callable>> fmap;
+  std::unordered_map<std::string, expr_value> fmap;
+  // std::unordered_map<std::string, std::unique_ptr<callable>> fmap;
 };
 
 class interp {

@@ -46,12 +46,6 @@ expr_value get_value_from_expr(eval_context& ctx,
             return eval_if(ctx, list_node);
           }
           break;
-        case 'f':
-          // @todo: not necessary?
-          if (name == "fun") {
-            return eval_fun(ctx, list_node);
-          }
-          break;
         default:
           break;
       }
@@ -86,6 +80,10 @@ void interp::eval(eval_context& ctx, const std::shared_ptr<expr>& node) {
           eval_debug(ctx, outer_lst);
         } else if (name == "set") {
           eval_set(ctx, outer_lst);
+        } else if (name == "fun") {
+          eval_fun(ctx, outer_lst);
+        } else if (name == "if") {
+          eval_if(ctx, outer_lst);
         }
       }
     }
@@ -94,46 +92,12 @@ void interp::eval(eval_context& ctx, const std::shared_ptr<expr>& node) {
 
 // @todo: prevent redefinition & mutable-by-default
 void interp::eval_def(eval_context& ctx,
-                      const std::shared_ptr<list_expr>& list) {
-  // we will allow def to work with function expressions
-  // and normal variable initialization (both into vmap)
-  if (list->get_exprs().size() == 2) {
-    auto func_expr = list->get_exprs()[1];
+                      const std::shared_ptr<list_expr>& lst) {
+  auto symbol = std::dynamic_pointer_cast<symbol_expr>(lst->get_exprs()[1]);
+  auto value_expr = get_value_from_expr(ctx, lst->get_exprs()[2]);
 
-    if (auto func_list = std::dynamic_pointer_cast<list_expr>(func_expr)) {
-      if (auto func_symbol = std::dynamic_pointer_cast<symbol_expr>(
-              func_list->get_exprs()[0])) {
-        if (func_symbol->get_name() == "fun") {
-          auto func_value = eval_fun(ctx, func_list);
-
-          if (auto func_name_expr = std::dynamic_pointer_cast<symbol_expr>(
-                  func_list->get_exprs()[1])) {
-            ctx.vmap[func_name_expr->get_name()] = std::move(func_value);
-            return;
-          }
-        }
-      }
-    }
-
-    std::cerr << "error: invalid 'def' expression" << std::endl;
-    exit(1);
-  } else if (list->get_exprs().size() == 3) {
-    auto symbol = std::dynamic_pointer_cast<symbol_expr>(list->get_exprs()[1]);
-    auto value_expr = get_value_from_expr(ctx, list->get_exprs()[2]);
-
-    if (symbol) {
-      ctx.vmap[symbol->get_name()] = std::move(value_expr);
-
-      return;
-    }
-
-    std::cerr << "error: invalid 'def' expression for variable initialization"
-              << std::endl;
-    exit(1);
-  } else {
-    std::cerr << "error: 'def' expression must have 1 or 2 parameters"
-              << std::endl;
-    exit(1);
+  if (symbol) {
+    ctx.vmap[symbol->get_name()] = std::move(value_expr);
   }
 }
 
@@ -392,6 +356,8 @@ expr_value eval_fun(eval_context& ctx, const std::shared_ptr<list_expr>& list) {
 
     return func_ret_value;
   };
+
+  std::cout << "FUNCTION DEFINED : " << func_name << std::endl;
 
   ctx.fmap.insert_or_assign(
       std::move(func_name),
