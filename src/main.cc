@@ -40,8 +40,8 @@ void argparse(int argc, char const* argv[]) {
 void compile(const std::string& source) {
   std::vector<token> tokens = tokenize(source);
   const std::shared_ptr<expr>& expr_tree = parser(tokens).parse();
-
-  interp().eval(expr_tree);
+  eval_context ctx;
+  interp().eval(ctx, expr_tree);
 }
 
 int main(int argc, char const* argv[]) {

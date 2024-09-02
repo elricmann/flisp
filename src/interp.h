@@ -9,17 +9,28 @@
 
 #include "parser.h"
 
+class eval_context {
+ public:
+  std::unordered_map<std::string, expr_value> vmap;
+  std::unordered_map<std::string,
+                     std::function<expr_value(std::vector<expr_value>)>>
+      fmap;
+};
+
 class interp {
  public:
-  void eval(const std::shared_ptr<expr>& node);
+  interp() : ctx() {}
+
+  void eval(eval_context& ctx, const std::shared_ptr<expr>& node);
 
  private:
+  eval_context ctx;
   std::unordered_map<std::string, expr_value> vmap;
   bool skip_initial_lst;
 
-  void eval_def(const std::shared_ptr<list_expr>& list);
-  void eval_set(const std::shared_ptr<list_expr>& list);
-  void eval_debug(const std::shared_ptr<list_expr>& list);
+  void eval_def(eval_context& ctx, const std::shared_ptr<list_expr>& list);
+  void eval_set(eval_context& ctx, const std::shared_ptr<list_expr>& list);
+  void eval_debug(eval_context& ctx, const std::shared_ptr<list_expr>& list);
 };
 
 // the definitions below should remain recursive with regards
@@ -27,20 +38,13 @@ class interp {
 // on their corresponding identity elements (e.g. 0 for additive
 // identity or 1 for multiplicative identity)
 
-expr_value eval_add(const std::shared_ptr<list_expr>& list,
-                    const std::unordered_map<std::string, expr_value>& vmap);
-expr_value eval_sub(const std::shared_ptr<list_expr>& list,
-                    const std::unordered_map<std::string, expr_value>& vmap);
-expr_value eval_mul(const std::shared_ptr<list_expr>& list,
-                    const std::unordered_map<std::string, expr_value>& vmap);
-expr_value eval_div(const std::shared_ptr<list_expr>& list,
-                    const std::unordered_map<std::string, expr_value>& vmap);
+expr_value eval_if(eval_context& ctx, const std::shared_ptr<list_expr>& list);
+expr_value eval_add(eval_context& ctx, const std::shared_ptr<list_expr>& list);
+expr_value eval_sub(eval_context& ctx, const std::shared_ptr<list_expr>& list);
+expr_value eval_mul(eval_context& ctx, const std::shared_ptr<list_expr>& list);
+expr_value eval_div(eval_context& ctx, const std::shared_ptr<list_expr>& list);
 
-expr_value eval_if(const std::shared_ptr<list_expr>& list,
-                   const std::unordered_map<std::string, expr_value>& vmap);
-
-expr_value get_value_from_expr(
-    const std::shared_ptr<expr>& node,
-    const std::unordered_map<std::string, expr_value>& vmap);
+expr_value get_value_from_expr(eval_context& ctx,
+                               const std::shared_ptr<expr>& node);
 
 #endif  // INTERP_H

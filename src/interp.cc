@@ -2,9 +2,8 @@
 
 #include <iostream>
 
-expr_value get_value_from_expr(
-    const std::shared_ptr<expr>& node,
-    const std::unordered_map<std::string, expr_value>& vmap) {
+expr_value get_value_from_expr(eval_context& ctx,
+                               const std::shared_ptr<expr>& node) {
   if (auto int_node = std::dynamic_pointer_cast<integer_expr>(node)) {
     return int_node->get_value();
   } else if (auto float_node = std::dynamic_pointer_cast<float_expr>(node)) {
@@ -16,36 +15,35 @@ expr_value get_value_from_expr(
   } else if (auto symbol_node = std::dynamic_pointer_cast<symbol_expr>(node)) {
     const std::string& name = symbol_node->get_name();
 
-    if (vmap.find(name) != vmap.end()) {
-      return vmap.at(name);
+    if (ctx.vmap.find(name) != ctx.vmap.end()) {
+      return ctx.vmap.at(name);
     } else {
-      // return name; /*keep this for tests*/
       std::cerr << "error: identifier '" << name << "' not found" << std::endl;
       exit(1);
     }
   } else if (auto list_node = std::dynamic_pointer_cast<list_expr>(node)) {
-    auto first_expr = list_node->get_exprs().front();
-    auto symbol = std::dynamic_pointer_cast<symbol_expr>(first_expr);
+    auto fst_expr = list_node->get_exprs().front();
+    auto symbol = std::dynamic_pointer_cast<symbol_expr>(fst_expr);
 
     if (symbol) {
       const std::string& name = symbol->get_name();
 
       switch (name[0]) {
         case '+':
-          return eval_add(list_node, vmap);
+          return eval_add(ctx, list_node);
           break;
         case '-':
-          return eval_sub(list_node, vmap);
+          return eval_sub(ctx, list_node);
           break;
         case '*':
-          return eval_mul(list_node, vmap);
+          return eval_mul(ctx, list_node);
           break;
         case '/':
-          return eval_div(list_node, vmap);
+          return eval_div(ctx, list_node);
           break;
         case 'i':
           if (name == "if") {
-            return eval_if(list_node, vmap);
+            return eval_if(ctx, list_node);
           }
           break;
         default:
@@ -58,38 +56,30 @@ expr_value get_value_from_expr(
   exit(1);
 }
 
-void interp::eval(const std::shared_ptr<expr>& node) {
+void interp::eval(eval_context& ctx, const std::shared_ptr<expr>& node) {
   if (auto outer_lst = std::dynamic_pointer_cast<list_expr>(node)) {
     // we need this check to ensure that adjacent
     // nodes are not in conflict with nested nodes
     for (auto&& inner_lst : outer_lst->get_exprs()) {
-      eval(inner_lst);
+      eval(ctx, inner_lst);
       skip_initial_lst = false;
     }
 
     skip_initial_lst = true;
 
     if (skip_initial_lst) {
-      auto first_expr = outer_lst->get_exprs().front();
-      auto symbol = std::dynamic_pointer_cast<symbol_expr>(first_expr);
+      auto fst_expr = outer_lst->get_exprs().front();
+      auto symbol = std::dynamic_pointer_cast<symbol_expr>(fst_expr);
 
       if (symbol) {
         const std::string& name = symbol->get_name();
 
-        // clang-format off
-
-        static const std::unordered_map<std::string, std::function<void(std::shared_ptr<list_expr>)>> dispatch_table = {
-          {"def", [this](std::shared_ptr<list_expr> lst) { eval_def(lst); }},
-          {"set", [this](std::shared_ptr<list_expr> lst) { eval_set(lst); }},
-          {"debug", [this](std::shared_ptr<list_expr> lst) { eval_debug(lst); }}
-        };
-
-        // clang-format on
-
-        auto it = dispatch_table.find(name);
-
-        if (it != dispatch_table.end()) {
-          it->second(outer_lst);
+        if (name == "def") {
+          eval_def(ctx, outer_lst);
+        } else if (name == "debug") {
+          eval_debug(ctx, outer_lst);
+        } else if (name == "set") {
+          eval_set(ctx, outer_lst);
         }
       }
     }
@@ -97,29 +87,32 @@ void interp::eval(const std::shared_ptr<expr>& node) {
 }
 
 // @todo: prevent redefinition & mutable-by-default
-void interp::eval_def(const std::shared_ptr<list_expr>& lst) {
+void interp::eval_def(eval_context& ctx,
+                      const std::shared_ptr<list_expr>& lst) {
   auto symbol = std::dynamic_pointer_cast<symbol_expr>(lst->get_exprs()[1]);
   // auto value_expr =
   //     std::dynamic_pointer_cast<integer_expr>(lst->get_exprs()[2]);
-  auto value_expr = get_value_from_expr(lst->get_exprs()[2], vmap);
+  auto value_expr = get_value_from_expr(ctx, lst->get_exprs()[2]);
 
   if (symbol) {
-    vmap[symbol->get_name()] = value_expr;
+    ctx.vmap[symbol->get_name()] = value_expr;
   }
 }
 
-void interp::eval_set(const std::shared_ptr<list_expr>& lst) {
+void interp::eval_set(eval_context& ctx,
+                      const std::shared_ptr<list_expr>& lst) {
   auto symbol = std::dynamic_pointer_cast<symbol_expr>(lst->get_exprs()[1]);
-  auto value_expr = get_value_from_expr(lst->get_exprs()[2], vmap);
+  auto value_expr = get_value_from_expr(ctx, lst->get_exprs()[2]);
 
   if (symbol) {
     vmap[symbol->get_name()] = value_expr;
   }
 }
 
-void interp::eval_debug(const std::shared_ptr<list_expr>& list) {
+void interp::eval_debug(eval_context& ctx,
+                        const std::shared_ptr<list_expr>& list) {
   for (size_t i = 1; i < list->get_exprs().size(); ++i) {
-    auto value = get_value_from_expr(list->get_exprs()[i], vmap);
+    auto value = get_value_from_expr(ctx, list->get_exprs()[i]);
 
     std::visit(
         [&](auto&& arg) {
@@ -139,12 +132,11 @@ void interp::eval_debug(const std::shared_ptr<list_expr>& list) {
   }
 }
 
-expr_value eval_add(const std::shared_ptr<list_expr>& list,
-                    const std::unordered_map<std::string, expr_value>& vmap) {
+expr_value eval_add(eval_context& ctx, const std::shared_ptr<list_expr>& list) {
   float acc = 0;
 
   for (size_t i = 1; i < list->get_exprs().size(); ++i) {
-    auto value = get_value_from_expr(list->get_exprs()[i], vmap);
+    auto value = get_value_from_expr(ctx, list->get_exprs()[i]);
 
     std::visit(
         [&](auto&& arg) {
@@ -162,14 +154,13 @@ expr_value eval_add(const std::shared_ptr<list_expr>& list,
   return acc;
 }
 
-expr_value eval_sub(const std::shared_ptr<list_expr>& list,
-                    const std::unordered_map<std::string, expr_value>& vmap) {
+expr_value eval_sub(eval_context& ctx, const std::shared_ptr<list_expr>& list) {
   if (list->get_exprs().size() < 2) {
     std::cerr << "error: at least one operand required for sub" << std::endl;
     exit(1);
   }
 
-  auto fst = get_value_from_expr(list->get_exprs()[1], vmap);
+  auto fst = get_value_from_expr(ctx, list->get_exprs()[1]);
   float acc = 0;
 
   std::visit(
@@ -186,7 +177,7 @@ expr_value eval_sub(const std::shared_ptr<list_expr>& list,
       fst);
 
   for (size_t i = 2; i < list->get_exprs().size(); ++i) {
-    auto value = get_value_from_expr(list->get_exprs()[i], vmap);
+    auto value = get_value_from_expr(ctx, list->get_exprs()[i]);
 
     std::visit(
         [&](auto&& arg) {
@@ -204,12 +195,11 @@ expr_value eval_sub(const std::shared_ptr<list_expr>& list,
   return acc;
 }
 
-expr_value eval_mul(const std::shared_ptr<list_expr>& list,
-                    const std::unordered_map<std::string, expr_value>& vmap) {
+expr_value eval_mul(eval_context& ctx, const std::shared_ptr<list_expr>& list) {
   float acc = 1;
 
   for (size_t i = 1; i < list->get_exprs().size(); ++i) {
-    auto value = get_value_from_expr(list->get_exprs()[i], vmap);
+    auto value = get_value_from_expr(ctx, list->get_exprs()[i]);
 
     std::visit(
         [&](auto&& arg) {
@@ -228,14 +218,13 @@ expr_value eval_mul(const std::shared_ptr<list_expr>& list,
   return acc;
 }
 
-expr_value eval_div(const std::shared_ptr<list_expr>& list,
-                    const std::unordered_map<std::string, expr_value>& vmap) {
+expr_value eval_div(eval_context& ctx, const std::shared_ptr<list_expr>& list) {
   if (list->get_exprs().size() < 2) {
     std::cerr << "error: at least one operand required for div" << std::endl;
     exit(1);
   }
 
-  auto fst = get_value_from_expr(list->get_exprs()[1], vmap);
+  auto fst = get_value_from_expr(ctx, list->get_exprs()[1]);
   float acc = 0;
 
   std::visit(
@@ -252,7 +241,7 @@ expr_value eval_div(const std::shared_ptr<list_expr>& list,
       fst);
 
   for (size_t i = 2; i < list->get_exprs().size(); ++i) {
-    auto value = get_value_from_expr(list->get_exprs()[i], vmap);
+    auto value = get_value_from_expr(ctx, list->get_exprs()[i]);
 
     std::visit(
         [&](auto&& arg) {
@@ -276,8 +265,7 @@ expr_value eval_div(const std::shared_ptr<list_expr>& list,
   return acc;
 }
 
-expr_value eval_if(const std::shared_ptr<list_expr>& list,
-                   const std::unordered_map<std::string, expr_value>& vmap) {
+expr_value eval_if(eval_context& ctx, const std::shared_ptr<list_expr>& list) {
   if (list->get_exprs().size() < 2) {
     std::cerr << "error: 'if' expression requires at least a condition and a "
                  "then clause"
@@ -285,7 +273,7 @@ expr_value eval_if(const std::shared_ptr<list_expr>& list,
     exit(1);
   }
 
-  auto condition_value = get_value_from_expr(list->get_exprs()[1], vmap);
+  auto condition_value = get_value_from_expr(ctx, list->get_exprs()[1]);
 
   bool condition = false;
 
@@ -304,11 +292,11 @@ expr_value eval_if(const std::shared_ptr<list_expr>& list,
       condition_value);
 
   if (condition) {
-    return get_value_from_expr(list->get_exprs()[2], vmap);
+    return get_value_from_expr(ctx, list->get_exprs()[2]);
   }
 
   if (list->get_exprs().size() > 3) {
-    return get_value_from_expr(list->get_exprs()[3], vmap);
+    return get_value_from_expr(ctx, list->get_exprs()[3]);
   }
 
   return {};
