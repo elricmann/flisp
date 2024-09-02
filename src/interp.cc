@@ -46,7 +46,7 @@ void interp::eval_def(const std::shared_ptr<list_expr>& lst) {
       std::dynamic_pointer_cast<integer_expr>(lst->get_exprs()[2]);
 
   if (symbol && value_expr) {
-    variables[symbol->get_name()] = value_expr->get_value();
+    vmap[symbol->get_name()] = value_expr->get_value();
   }
 }
 
@@ -56,7 +56,7 @@ void interp::eval_set(const std::shared_ptr<list_expr>& lst) {
       std::dynamic_pointer_cast<integer_expr>(lst->get_exprs()[2]);
 
   if (symbol && value_expr) {
-    variables[symbol->get_name()] = value_expr->get_value();
+    vmap[symbol->get_name()] = value_expr->get_value();
   }
 }
 
@@ -64,8 +64,8 @@ void interp::eval_debug(const std::shared_ptr<list_expr>& list) {
   auto symbol = std::dynamic_pointer_cast<symbol_expr>(list->get_exprs()[1]);
 
   if (symbol) {
-    if (variables.find(symbol->get_name()) != variables.end()) {
-      std::cout << variables[symbol->get_name()] << std::endl;
+    if (vmap.find(symbol->get_name()) != vmap.end()) {
+      std::cout << vmap[symbol->get_name()] << std::endl;
     } else {
       std::cerr << "error: variable " << symbol->get_name() << " not found"
                 << std::endl;
