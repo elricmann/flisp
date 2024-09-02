@@ -15,6 +15,7 @@ Forms represent both structural and semantic constructs, which is what makes lis
 - [x] `debug` is an alias for printing values to `std::cout`
 - [x] `+`, `-`, `*`, `/` expressions with left-reduce accumulators
 - [x] `if` conditional expression (optional else clause)
+- [x] `fun` declarations for named functions with local context
 
 In the evaluation loop, non-terminals are forward definitions and terminals are recursively evaluated (e.g. forms for binary operations), implying that a `def` may not be assigned to a `def` since terminals do not return an `expr_value`.
 

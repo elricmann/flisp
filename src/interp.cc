@@ -47,9 +47,6 @@ expr_value get_value_from_expr(eval_context& ctx,
 
         auto& func_value = ctx.fmap.at(name);
 
-        std::cout << "FN CALL : " << name << " ARG SIZE : " << args.size()
-                  << " FMAP SIZE : " << ctx.fmap.size() << std::endl;
-
         if (auto* func_ptr =
                 std::get_if<std::unique_ptr<callable>>(&func_value)) {
           if (func_ptr && *func_ptr) {
@@ -63,11 +60,9 @@ expr_value get_value_from_expr(eval_context& ctx,
                     << std::endl;
           exit(1);
         }
-
-        // return {};
       } else {
-        std::cerr << "error: function '" << name << "' not found in fmap"
-                  << std::endl;
+        std::cerr << "internal error: function '" << name
+                  << "' not found in fmap" << std::endl;
         exit(1);
       }
     }
@@ -377,8 +372,6 @@ expr_value eval_fun(eval_context& ctx, const std::shared_ptr<list_expr>& list) {
 
     return func_ret_value;
   };
-
-  std::cout << "FUNCTION DEFINED : " << func_name << std::endl;
 
   ctx.fmap.insert_or_assign(
       std::move(func_name),

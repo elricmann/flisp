@@ -15,6 +15,10 @@ class eval_context;
 using expr_value =
     std::variant<int, float, bool, std::string, std::unique_ptr<callable>>;
 
+// we do this to avoid template overloading which requires specific
+// instantiations of flisp functions in lieu of using std::unique_ptr
+// on a callable interface which is actually realistic
+
 class callable {
  public:
   virtual ~callable() = default;
@@ -64,7 +68,6 @@ class interp {
 // identity or 1 for multiplicative identity)
 
 expr_value eval_fun(eval_context& ctx, const std::shared_ptr<list_expr>& list);
-// expr_value eval_call(eval_context& ctx, const std::shared_ptr<list_expr>& list);
 expr_value eval_if(eval_context& ctx, const std::shared_ptr<list_expr>& list);
 expr_value eval_add(eval_context& ctx, const std::shared_ptr<list_expr>& list);
 expr_value eval_sub(eval_context& ctx, const std::shared_ptr<list_expr>& list);

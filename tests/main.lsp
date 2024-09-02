@@ -22,6 +22,8 @@
 
 (debug (if #t 1 0))
 
-(fun add (a b) (+ a b))
+(fun add (a b) ((+ a b)))
 
-(def n (add 2 3))
+(def n (add 99 3))
+
+(debug n (add 0.1 0.2))
